@@ -1,16 +1,23 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
-import { ChatView, VIEW_TYPE_CHAT } from 'view';
+import { App, ItemView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, request } from 'obsidian';
+// import { ChatView, VIEW_TYPE_CHAT } from 'view';
+import OpenAI from 'openai';
 
 // Remember to rename these classes and interfaces!
 
 interface MyPluginSettings {
-	mySetting: string;
+	apiKey: string;
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+	apiKey: ''
 }
 
+const VIEW_TYPE_CHAT = "chat-view"
+const API_ENDPOINT = "https://api.openai.com/v1/chat/completions"
+
+/**
+ * Plugin Class
+ */
 export default class MyPlugin extends Plugin {
 	settings: MyPluginSettings;
 
@@ -26,10 +33,8 @@ export default class MyPlugin extends Plugin {
 		// TODO: figure out how to get an html element to appear
 		this.registerView(
 			VIEW_TYPE_CHAT,
-			(leaf) =>new ChatView(leaf)
+			(leaf) =>new ChatView(leaf, this)
 		)
-
-
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('brain-circuit', 'Sample Plugin', (evt: MouseEvent) => {
@@ -153,6 +158,128 @@ class SampleModal extends Modal {
 	}
 }
 
+
+/**
+ * Chat UI
+ */
+
+class ChatView extends ItemView{
+
+	plugin: MyPlugin
+
+  constructor(leaf: WorkspaceLeaf, plugin: MyPlugin){
+    super(leaf);
+		this.plugin = plugin
+  }
+
+  getViewType(): string {
+    return VIEW_TYPE_CHAT;
+  }
+
+  getDisplayText(): string {
+    return "Chat View"
+  }
+
+  async fleshOutNote(){
+    const file = this.app.workspace.getActiveFile()
+    if (file) {
+      console.log("the currently active file is", file);
+			console.log("this is its content", await this.app.vault.read(file));
+			const fileContent = await this.app.vault.read(file)
+
+			const systemPrompt = `Your job is to make a student's notes better.
+			you are going to take this student's note,
+			delimited by three asterisks (*** note ***), and flesh it out.
+			Add more detail, add definitions, and provide examples when able.
+			Return only the new rewritten note content in markdown format.
+			***
+			${fileContent}
+			***`
+
+			try {
+				const response = await request({
+					url: API_ENDPOINT,
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${this.plugin.settings.apiKey}`
+					},
+					body: JSON.stringify({
+						model: "gpt-4o-mini",
+						temperature: .5,
+						stream: false,
+						messages: [
+							{ role: 'system', content: systemPrompt}
+						]
+					})
+				});
+				const parsedResponse = JSON.parse(response);
+				const newNoteContent = parsedResponse.choices[0].message.content
+				console.log("new note content", newNoteContent)
+
+				// TODO: CREATE NEW NOTE
+				const newNote = await this.app.vault.create(
+					file.parent?.path + `/AI revised ${file.name}`,
+					newNoteContent
+				)
+				// TODO: When we make a new note, we should open it:
+				if(newNote){
+					const leaf = this.app.workspace.getLeaf("split", "vertical")
+					leaf.openFile(newNote)
+				}
+    }
+		catch(error: unknown){
+			console.log("ERROR!", error)
+		}
+	}
+    else{
+      console.log("there is no active file")
+    }
+  }
+
+  protected async onOpen(): Promise<void> {
+    const container = this.containerEl.children[1]
+    container.empty()
+    container.createEl("h2", {text: "What would you like to do with this note?"})
+
+    const button1 = container.createEl("button", {text: "Flesh Out"})
+    button1.addEventListener("click", async (evt)=>{
+      console.log("Clicked Flesh out")
+      await this.fleshOutNote()
+    })
+    // const button2 = container.createEl("button", {text: "Re-organize"})
+    // button2.addEventListener("click", (evt)=>{
+    //   console.log("Clicked Reorganize")
+    // })
+    // const button3 = container.createEl("button", {text: "Create Quiz"})
+    // button3.addEventListener("click", (evt)=>{
+    //   console.log("Clicked Create Quiz")
+    // })
+    // const button4 = container.createEl("button", {text: "Create Exercise"})
+    // button4.addEventListener("click", (evt)=>{
+    //   console.log("Clicked Create Exercise")
+    // })
+
+
+    const form = container.createEl("form", {})
+    const userInput = form.createEl("input", {})
+    userInput.setAttribute("placeholder", "Hello")
+    const submitButton = form.createEl("input", {type: "submit"})
+    // submitButton.onClickEvent((evt)=>
+    //   evt.preventDefault()
+    //   console.log("YOU CLICKED IT!")
+    // )
+    form.addEventListener("submit", (evt) => {
+      evt.preventDefault()
+      console.log("You submit the form, and the input said", userInput.value)
+      userInput.value = ""
+    })
+  }
+}
+
+/**
+ * Settings for plugin
+ */
 class SampleSettingTab extends PluginSettingTab {
 	plugin: MyPlugin;
 
@@ -167,13 +294,13 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Setting #1')
+			.setName('OpenAI API Key')
 			.setDesc('It\'s a secret')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setPlaceholder('Enter your API Key')
+				.setValue(this.plugin.settings.apiKey)
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.apiKey = value;
 					await this.plugin.saveSettings();
 				}));
 	}

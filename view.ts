@@ -1,4 +1,5 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
+import {mySetting} from "data.json"
 
 export const VIEW_TYPE_CHAT = "chat-view"
 
@@ -37,14 +38,14 @@ export class ChatView extends ItemView{
       console.log("Clicked Flesh out")
       await this.fleshOutNote()
     })
-    const button2 = container.createEl("button", {text: "Re-organize"})
-    button2.addEventListener("click", (evt)=>{
-      console.log("Clicked Reorganize")
-    })
-    const button3 = container.createEl("button", {text: "Create Quiz"})
-    button3.addEventListener("click", (evt)=>{
-      console.log("Clicked Create Quiz")
-    })
+    // const button2 = container.createEl("button", {text: "Re-organize"})
+    // button2.addEventListener("click", (evt)=>{
+    //   console.log("Clicked Reorganize")
+    // })
+    // const button3 = container.createEl("button", {text: "Create Quiz"})
+    // button3.addEventListener("click", (evt)=>{
+    //   console.log("Clicked Create Quiz")
+    // })
     // const button4 = container.createEl("button", {text: "Create Exercise"})
     // button4.addEventListener("click", (evt)=>{
     //   console.log("Clicked Create Exercise")
