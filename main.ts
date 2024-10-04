@@ -121,11 +121,11 @@ export default class MyPlugin extends Plugin {
 			// Our view could not be found in the workspace, create a new leaf
 			// in the right sidebar for it
 			leaf = workspace.getRightLeaf(false);
-			await leaf.setViewState({ type: VIEW_TYPE_CHAT, active: true });
+			await leaf?.setViewState({ type: VIEW_TYPE_CHAT, active: true });
 		}
 
 		// "Reveal" the leaf in case it is in a collapsed sidebar
-		workspace.revealLeaf(leaf);
+		workspace.revealLeaf(leaf!);
 	}
 
 	async loadSettings() {
