@@ -1,6 +1,7 @@
-import { App, ItemView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, request } from 'obsidian';
+import { App, ItemView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, normalizePath, request } from 'obsidian';
 // import { ChatView, VIEW_TYPE_CHAT } from 'view';
-import OpenAI from 'openai';
+import fs from "fs";
+import FormData from 'form-data';
 
 // Remember to rename these classes and interfaces!
 
@@ -14,6 +15,7 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 
 const VIEW_TYPE_CHAT = "chat-view"
 const API_ENDPOINT = "https://api.openai.com/v1/chat/completions"
+const BASE_API_ENDPOINT = "https://api.openai.com/v1"
 
 /**
  * Plugin Class
@@ -169,7 +171,7 @@ class ChatView extends ItemView{
 
   constructor(leaf: WorkspaceLeaf, plugin: MyPlugin){
     super(leaf);
-		this.plugin = plugin
+		this.plugin = plugin;
   }
 
   getViewType(): string {
@@ -179,6 +181,164 @@ class ChatView extends ItemView{
   getDisplayText(): string {
     return "Chat View"
   }
+
+
+async transcribeAudio(filePath: string) {
+    try {
+        // Check if the file exists
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`File not found: ${filePath}`);
+        }
+
+        console.log("Reading file...");
+
+        // Create a form-data instance
+        const fData = new FormData();
+
+        // Append the audio file as a read stream
+        const audioFile = fs.createReadStream(filePath);
+        fData.append("file", audioFile, {
+            filename: 'audio.mp3', // Provide a filename for the file
+            contentType: 'audio/mpeg' // Specify the content type
+        });
+
+        // Append the Whisper model
+        fData.append("model", "whisper-1");
+
+        // Send the request with proper form-data headers
+        const response = await fetch(`${BASE_API_ENDPOINT}/audio/transcriptions`, {
+            method: 'POST',
+            body: fData, // No need to cast as 'any' now
+            headers: {
+                'Authorization': `Bearer ${this.plugin.settings.apiKey}`,
+                ...fData.getHeaders(), // Use the form-data headers
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Request failed: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log("Transcription Text:", data);
+
+        // Create a new note with the transcription result
+        const newNote = await this.app.vault.create(
+            'audio/test.md',
+            data.text
+        );
+
+        if (newNote) {
+            const leaf = this.app.workspace.getLeaf("split", "vertical");
+            leaf.openFile(newNote);
+        }
+
+    } catch (error) {
+        console.log("There was an error:", error);
+    }
+}
+
+
+	// async transcribeAudio(filePath: string){
+	// 	try {
+	// 		console.log("reading stream")
+	// 		const audioFile = fs.readFileSync(filePath);
+	// 		console.log("readstream:", audioFile);
+	// 		const fData = new FormData()
+	// 		fData.append("file", audioFile, {filename:'audio.mp3', contentType:'audio/mpeg'})
+	// 		// fData.append("model", "whisper-1")npm
+
+	// 		console.log("FormData:", fData, "<---")
+
+	// 		const response = await fetch(
+	// 			`${BASE_API_ENDPOINT}/audio/transcriptions`, {
+	// 				method:'POST',
+	// 				body:fData as any,
+	// 				headers:{
+	// 					'Authorization': `Bearer ${this.plugin.settings.apiKey}`
+	// 				}
+	// 			})
+
+	// 			const data = await response.json()
+	// 		console.log("transcriptionTxt:", data)
+
+	// 		// CREATE NEW NOTE
+	// 		const newNote = await this.app.vault.create(
+	// 			'audio/test.md',
+	// 			data.text
+	// 		)
+	// 		// When we make a new note, we should open it:
+	// 		if(newNote){
+	// 			const leaf = this.app.workspace.getLeaf("split", "vertical")
+	// 			leaf.openFile(newNote)
+	// 		}
+
+	// 	} catch(error){
+	// 		console.log("There was an error:", error)
+	// 	}
+
+	// }
+
+	async transcribeVideo(url: string){
+
+
+	// 	ytdl('http://www.youtube.com/watch?v=aqz-KE-bpKQ')
+  // .pipe(fs.createWriteStream('/tmp/test.mp4'))
+	// // 	try{
+
+
+	// 	console.log("Will try and download");
+
+	// 	const info = await ytdl.getInfo(url);
+	// 	console.log(info);
+
+	// 	const pass = ytdl.downloadFromInfo(info);
+	// 	console.log("pass:", pass);
+
+	// 	// Listen to the 'progress' event from the ytdl stream
+	// 	pass.on("progress", (chunkLength, downloaded, total) => {
+	// 		const percent = (downloaded / total) * 100;
+	// 		console.log(`Downloading: ${percent.toFixed(2)}%`);
+	// 	});
+
+	// 	// Pipe the stream into a write stream to save the audio file
+	// 	const writeStream = fs.createWriteStream("./tmp/video.mp4");
+	// 	console.log("write stream:", writeStream)
+	// 	pass.pipe(writeStream);
+
+	// 	// Listen for when the file has finished writing
+	// 	writeStream.on("finish", () => {
+	// 		console.log("Download complete!");
+	// 	});
+
+	// 	writeStream.on("error", (err) => {
+	// 		console.error("Error writing file:", err);
+	// 	});
+	// } catch(err){
+	// 	console.log("ERROR:", err)
+	// }
+
+		// console.log("will try and download")
+
+		// const info = await ytdl.getInfo(url)
+		// console.log(info)
+		// const pass = ytdl.downloadFromInfo(info)
+		// console.log("pass:", pass)
+		// const audio = pass.pipe(fs.createWriteStream("./tmp/audio.mp3"))
+		// console.log("write stream:",audio)
+		// audio.on("progress", ()=>{
+		// 	console.log("HELLO?")
+		// })
+		// audio.on("close", ()=>{
+		// 	console.log("FINISHED!")
+		// })
+
+		// const outputStream = ytdl(url, {filter:'audioonly'}).pipe(fs.createWriteStream("/tmp/audio.mp3"))
+		// console.log("output stream", outputStream)
+		// outputStream.on('close', () =>{
+		// 	console.log("FINISHED!!!!!")
+		// })
+	}
 
   async fleshOutNote(){
     const file = this.app.workspace.getActiveFile()
@@ -240,13 +400,30 @@ class ChatView extends ItemView{
   protected async onOpen(): Promise<void> {
     const container = this.containerEl.children[1]
     container.empty()
-    container.createEl("h2", {text: "What would you like to do with this note?"})
+    container.createEl("h2", {text: "What would you like to do?"})
 
-    const button1 = container.createEl("button", {text: "Flesh Out"})
-    button1.addEventListener("click", async (evt)=>{
+    const fleshOutButton = container.createEl("button", {text: "Flesh Out"})
+    fleshOutButton.addEventListener("click", async (evt)=>{
       console.log("Clicked Flesh out")
       await this.fleshOutNote()
     })
+
+    const transcribeButton = container.createEl("button", {text: "Transcribe"})
+    transcribeButton.addEventListener("click", async (evt)=>{
+			const file = this.app.workspace.getActiveFile()
+			if(file){
+				// @ts-ignore
+				await this.transcribeAudio(`${this.app.vault.adapter.basePath}/${file.path}`)
+
+			}
+    })
+
+		// const urlInput = container.createEl("input", {})
+		// const transcribeButton = container.createEl("button", {text: "Transcribe YT video"})
+		// transcribeButton.addEventListener("click", async(evt)=>{
+		// 	console.log("clicked transcribe, url=", urlInput.value);
+		// 	this.transcribeVideo(urlInput.value)
+		// })
     // const button2 = container.createEl("button", {text: "Re-organize"})
     // button2.addEventListener("click", (evt)=>{
     //   console.log("Clicked Reorganize")
@@ -261,19 +438,19 @@ class ChatView extends ItemView{
     // })
 
 
-    const form = container.createEl("form", {})
-    const userInput = form.createEl("input", {})
-    userInput.setAttribute("placeholder", "Hello")
-    const submitButton = form.createEl("input", {type: "submit"})
-    // submitButton.onClickEvent((evt)=>
+    // const form = container.createEl("form", {})
+    // const userInput = form.createEl("input", {})
+    // userInput.setAttribute("placeholder", "Hello")
+    // const submitButton = form.createEl("input", {type: "submit"})
+    // // submitButton.onClickEvent((evt)=>
+    // //   evt.preventDefault()
+    // //   console.log("YOU CLICKED IT!")
+    // // )
+    // form.addEventListener("submit", (evt) => {
     //   evt.preventDefault()
-    //   console.log("YOU CLICKED IT!")
-    // )
-    form.addEventListener("submit", (evt) => {
-      evt.preventDefault()
-      console.log("You submit the form, and the input said", userInput.value)
-      userInput.value = ""
-    })
+    //   console.log("You submit the form, and the input said", userInput.value)
+    //   userInput.value = ""
+    // })
   }
 }
 
