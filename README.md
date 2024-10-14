@@ -58,7 +58,7 @@ Quick starting guide for new plugin devs:
 - Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
 
 ## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
+- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code.
 - To use eslint with this project, make sure to install eslint from terminal:
   - `npm install -g eslint`
 - To use eslint to analyze this project use this command:
@@ -94,3 +94,10 @@ If you have multiple URLs, you can also do:
 ## API Documentation
 
 See https://github.com/obsidianmd/obsidian-api
+
+
+# SOME OTHER IDEAS
+- Anki integration
+- Quiz creator
+- Add more info
+- Make new notes and link?

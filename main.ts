@@ -183,60 +183,118 @@ class ChatView extends ItemView{
   }
 
 
-async transcribeAudio(filePath: string) {
-    try {
-        // Check if the file exists
-        if (!fs.existsSync(filePath)) {
-            throw new Error(`File not found: ${filePath}`);
-        }
+	async createQuiz(){
+		console.log("create quiz!");
 
-        console.log("Reading file...");
+		const file = this.app.workspace.getActiveFile()
+		if (file){
+			const fileContent = await this.app.vault.read(file)
 
-        // Create a form-data instance
-        const fData = new FormData();
+		const systemPrompt = `Your job is to make quiz out of this student's note.
+			you are going to take this student's note,
+			delimited by three asterisks (*** note ***), and create a quiz out of its content.
+			There should be a question for each importnat term in this note.
+			There should be at least 5 -10 conceptual questions.
+			Return only the quiz in a markdown table with two columns: question and answer.
+			***
+			${fileContent}
+			***`
+			const messages = [{
+				role:'system', content: systemPrompt
+			}]
 
-        // Append the audio file as a read stream
-        const audioFile = fs.createReadStream(filePath);
-        fData.append("file", audioFile, {
-            filename: 'audio.mp3', // Provide a filename for the file
-            contentType: 'audio/mpeg' // Specify the content type
-        });
+			const newNoteContent = await this.talkToApi(messages)
 
-        // Append the Whisper model
-        fData.append("model", "whisper-1");
+			// Create new note
+			const newNote = await this.app.vault.create(
+				file.parent?.path + `/AI Quiz for ${file.name}`,
+				newNoteContent
+			)
 
-        // Send the request with proper form-data headers
-        const response = await fetch(`${BASE_API_ENDPOINT}/audio/transcriptions`, {
-            method: 'POST',
-            body: fData, // No need to cast as 'any' now
-            headers: {
-                'Authorization': `Bearer ${this.plugin.settings.apiKey}`,
-                ...fData.getHeaders(), // Use the form-data headers
-            }
-        });
+			// If successful, open new note
+			if(newNote){
+				const leaf = this.app.workspace.getLeaf("split", "vertical")
+				leaf.openFile(newNote)
+			}
+		}
+		else {
+			console.log("ERROR: No active file. Plaese open a note.")
+		}
 
-        if (!response.ok) {
-            throw new Error(`Request failed: ${response.statusText}`);
-        }
 
-        const data = await response.json();
-        console.log("Transcription Text:", data);
+	}
 
-        // Create a new note with the transcription result
-        const newNote = await this.app.vault.create(
-            'audio/test.md',
-            data.text
-        );
+	async talkToApi(messages){
+		const response = await request({
+			url: API_ENDPOINT,
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${this.plugin.settings.apiKey}`
+			},
+			body: JSON.stringify({
+				model: "gpt-4o-mini",
+				temperature: .5,
+				stream: false,
+				messages: messages
+			})
+		});
 
-        if (newNote) {
-            const leaf = this.app.workspace.getLeaf("split", "vertical");
-            leaf.openFile(newNote);
-        }
+		const responseContent = JSON.parse(response).choices[0].message.content;
+		return responseContent
 
-    } catch (error) {
-        console.log("There was an error:", error);
-    }
-}
+	}
+	// async transcribeAudio(filePath: string) {
+	// 		try {
+	// 				// Check if the file exists
+	// 				if (!fs.existsSync(filePath)) {
+	// 						throw new Error(`File not found: ${filePath}`);
+	// 				}
+
+	// 				console.log("Reading file from ", filePath);
+
+	// 				// Create a form-data instance
+	// 				const fData = new FormData();
+
+	// 				// Append the audio file as a read stream
+	// 				const audioFile = fs.createReadStream(filePath);
+	// 				fData.append("file", audioFile);
+
+	// 				// Append the Whisper model
+	// 				fData.append("model", "whisper-1");
+
+	// 				// Send the request with proper form-data headers
+	// 				const response = await fetch(`${BASE_API_ENDPOINT}/audio/transcriptions`, {
+	// 						method: 'POST',
+	// 						body: fData, // No need to cast as 'any' now
+	// 						headers: {
+	// 								'Authorization': `Bearer ${this.plugin.settings.apiKey}`,
+	// 								...fData.getHeaders(), // Use the form-data headers
+	// 						}
+	// 				});
+
+	// 				if (!response.ok) {
+	// 						throw new Error(`Request failed: ${response.statusText}`);
+	// 				}
+
+	// 				const data = await response.json();
+	// 				console.log("Transcription Text:", data);
+
+	// 				// Create a new note with the transcription result
+	// 				const newNote = await this.app.vault.create(
+	// 						'audio/test.md',
+	// 						data.text
+	// 				);
+
+	// 				if (newNote) {
+	// 						const leaf = this.app.workspace.getLeaf("split", "vertical");
+	// 						leaf.openFile(newNote);
+	// 				}
+
+	// 		} catch (error) {
+	// 				console.log("There was an error:", error);
+	// 		}
+	// }
 
 
 	// async transcribeAudio(filePath: string){
@@ -408,15 +466,20 @@ async transcribeAudio(filePath: string) {
       await this.fleshOutNote()
     })
 
-    const transcribeButton = container.createEl("button", {text: "Transcribe"})
-    transcribeButton.addEventListener("click", async (evt)=>{
-			const file = this.app.workspace.getActiveFile()
-			if(file){
-				// @ts-ignore
-				await this.transcribeAudio(`${this.app.vault.adapter.basePath}/${file.path}`)
+		const createQuizButton = container.createEl("button", {text: "Make Quiz"});
+		createQuizButton.addEventListener("click", async (evt)=>{
+			console.log("Clicked Create Quiz");
+			await this. createQuiz()
+		})
 
-			}
-    })
+    // const transcribeButton = container.createEl("button", {text: "Transcribe"})
+    // transcribeButton.addEventListener("click", async (evt)=>{
+		// 	const file = this.app.workspace.getActiveFile()
+		// 	if(file){
+		// 		// @ts-ignore
+		// 		await this.transcribeAudio(`${this.app.vault.adapter.basePath}/${file.path}`)
+		// 	}
+    // })
 
 		// const urlInput = container.createEl("input", {})
 		// const transcribeButton = container.createEl("button", {text: "Transcribe YT video"})
