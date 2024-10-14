@@ -54,60 +54,8 @@ export default class MyPlugin extends Plugin {
 			console.log("this is its content", await this.app.vault.read(file));
 		}
 
-
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		// const statusBarItemEl = this.addStatusBarItem();
-		// statusBarItemEl.setText('Status Bar Text');
-
-		// This adds a simple command that can be triggered anywhere
-		// this.addCommand({
-		// 	id: 'open-sample-modal-simple',
-		// 	name: 'Open sample modal (simple)',
-		// 	callback: () => {
-		// 		new SampleModal(this.app).open();
-		// 	}
-		// });
-		// This adds an editor command that can perform some operation on the current editor instance
-		// this.addCommand({
-		// 	id: 'sample-editor-command',
-		// 	name: 'Sample editor command',
-		// 	editorCallback: (editor: Editor, view: MarkdownView) => {
-		// 		console.log(editor.getSelection());
-		// 		editor.replaceSelection('Sample Editor Command');
-		// 	}
-		// });
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		// this.addCommand({
-		// 	id: 'open-sample-modal-complex',
-		// 	name: 'Open sample modal (complex)',
-		// 	checkCallback: (checking: boolean) => {
-		// 		// Conditions to check
-		// 		const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-		// 		if (markdownView) {
-		// 			// If checking is true, we're simply "checking" if the command can be run.
-		// 			// If checking is false, then we want to actually perform the operation.
-		// 			if (!checking) {
-		// 				new SampleModal(this.app).open();
-		// 			}
-
-		// 			// This command will only show up in Command Palette when the check function returns true
-		// 			return true;
-		// 		}
-		// 	}
-		// });
-
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		// this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-		// 	console.log('click', evt);
-		// });
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		// this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
 	onunload() {
@@ -182,6 +130,34 @@ class ChatView extends ItemView{
     return "Chat View"
   }
 
+	async createOutline(outlinePrompt: string){
+		console.log("Create Outline! prompt:", outlinePrompt);
+
+		const file = this.app.workspace.getActiveFile()
+		console.log("FILE:", file)
+		const path = file ? file.parent?.path : ""
+
+			const systemPrompt = `Make me a notes outline of ${outlinePrompt}.
+			This outline should start with 3-6 questions to keep in mind while reading.
+			this should just be a basic outline of the big ideas, but I am going to use
+			it and fill in all the important details as i read the chapter`
+
+			const messages = [{role:'system', content: systemPrompt}];
+
+			const newNoteContent = await this.talkToApi(messages);
+
+			// Create new note
+			const newNote = await this.app.vault.create(
+				path + `/Outline for ${outlinePrompt}`,
+				newNoteContent
+			)
+
+			// If successful, open new note
+			if(newNote){
+				const leaf = this.app.workspace.getLeaf("split", "vertical")
+				leaf.openFile(newNote)
+			}
+	}
 
 	async createQuiz(){
 		console.log("create quiz!");
@@ -243,159 +219,6 @@ class ChatView extends ItemView{
 		const responseContent = JSON.parse(response).choices[0].message.content;
 		return responseContent
 
-	}
-	// async transcribeAudio(filePath: string) {
-	// 		try {
-	// 				// Check if the file exists
-	// 				if (!fs.existsSync(filePath)) {
-	// 						throw new Error(`File not found: ${filePath}`);
-	// 				}
-
-	// 				console.log("Reading file from ", filePath);
-
-	// 				// Create a form-data instance
-	// 				const fData = new FormData();
-
-	// 				// Append the audio file as a read stream
-	// 				const audioFile = fs.createReadStream(filePath);
-	// 				fData.append("file", audioFile);
-
-	// 				// Append the Whisper model
-	// 				fData.append("model", "whisper-1");
-
-	// 				// Send the request with proper form-data headers
-	// 				const response = await fetch(`${BASE_API_ENDPOINT}/audio/transcriptions`, {
-	// 						method: 'POST',
-	// 						body: fData, // No need to cast as 'any' now
-	// 						headers: {
-	// 								'Authorization': `Bearer ${this.plugin.settings.apiKey}`,
-	// 								...fData.getHeaders(), // Use the form-data headers
-	// 						}
-	// 				});
-
-	// 				if (!response.ok) {
-	// 						throw new Error(`Request failed: ${response.statusText}`);
-	// 				}
-
-	// 				const data = await response.json();
-	// 				console.log("Transcription Text:", data);
-
-	// 				// Create a new note with the transcription result
-	// 				const newNote = await this.app.vault.create(
-	// 						'audio/test.md',
-	// 						data.text
-	// 				);
-
-	// 				if (newNote) {
-	// 						const leaf = this.app.workspace.getLeaf("split", "vertical");
-	// 						leaf.openFile(newNote);
-	// 				}
-
-	// 		} catch (error) {
-	// 				console.log("There was an error:", error);
-	// 		}
-	// }
-
-
-	// async transcribeAudio(filePath: string){
-	// 	try {
-	// 		console.log("reading stream")
-	// 		const audioFile = fs.readFileSync(filePath);
-	// 		console.log("readstream:", audioFile);
-	// 		const fData = new FormData()
-	// 		fData.append("file", audioFile, {filename:'audio.mp3', contentType:'audio/mpeg'})
-	// 		// fData.append("model", "whisper-1")npm
-
-	// 		console.log("FormData:", fData, "<---")
-
-	// 		const response = await fetch(
-	// 			`${BASE_API_ENDPOINT}/audio/transcriptions`, {
-	// 				method:'POST',
-	// 				body:fData as any,
-	// 				headers:{
-	// 					'Authorization': `Bearer ${this.plugin.settings.apiKey}`
-	// 				}
-	// 			})
-
-	// 			const data = await response.json()
-	// 		console.log("transcriptionTxt:", data)
-
-	// 		// CREATE NEW NOTE
-	// 		const newNote = await this.app.vault.create(
-	// 			'audio/test.md',
-	// 			data.text
-	// 		)
-	// 		// When we make a new note, we should open it:
-	// 		if(newNote){
-	// 			const leaf = this.app.workspace.getLeaf("split", "vertical")
-	// 			leaf.openFile(newNote)
-	// 		}
-
-	// 	} catch(error){
-	// 		console.log("There was an error:", error)
-	// 	}
-
-	// }
-
-	async transcribeVideo(url: string){
-
-
-	// 	ytdl('http://www.youtube.com/watch?v=aqz-KE-bpKQ')
-  // .pipe(fs.createWriteStream('/tmp/test.mp4'))
-	// // 	try{
-
-
-	// 	console.log("Will try and download");
-
-	// 	const info = await ytdl.getInfo(url);
-	// 	console.log(info);
-
-	// 	const pass = ytdl.downloadFromInfo(info);
-	// 	console.log("pass:", pass);
-
-	// 	// Listen to the 'progress' event from the ytdl stream
-	// 	pass.on("progress", (chunkLength, downloaded, total) => {
-	// 		const percent = (downloaded / total) * 100;
-	// 		console.log(`Downloading: ${percent.toFixed(2)}%`);
-	// 	});
-
-	// 	// Pipe the stream into a write stream to save the audio file
-	// 	const writeStream = fs.createWriteStream("./tmp/video.mp4");
-	// 	console.log("write stream:", writeStream)
-	// 	pass.pipe(writeStream);
-
-	// 	// Listen for when the file has finished writing
-	// 	writeStream.on("finish", () => {
-	// 		console.log("Download complete!");
-	// 	});
-
-	// 	writeStream.on("error", (err) => {
-	// 		console.error("Error writing file:", err);
-	// 	});
-	// } catch(err){
-	// 	console.log("ERROR:", err)
-	// }
-
-		// console.log("will try and download")
-
-		// const info = await ytdl.getInfo(url)
-		// console.log(info)
-		// const pass = ytdl.downloadFromInfo(info)
-		// console.log("pass:", pass)
-		// const audio = pass.pipe(fs.createWriteStream("./tmp/audio.mp3"))
-		// console.log("write stream:",audio)
-		// audio.on("progress", ()=>{
-		// 	console.log("HELLO?")
-		// })
-		// audio.on("close", ()=>{
-		// 	console.log("FINISHED!")
-		// })
-
-		// const outputStream = ytdl(url, {filter:'audioonly'}).pipe(fs.createWriteStream("/tmp/audio.mp3"))
-		// console.log("output stream", outputStream)
-		// outputStream.on('close', () =>{
-		// 	console.log("FINISHED!!!!!")
-		// })
 	}
 
   async fleshOutNote(){
@@ -460,6 +283,14 @@ class ChatView extends ItemView{
     container.empty()
     container.createEl("h2", {text: "What would you like to do?"})
 
+
+		const outlinePromptInput = container.createEl("input", {title:"Section"})
+		const createOutlineButton = container.createEl("button", {text: "Create Outline"});
+		createOutlineButton.addEventListener("click", async (evt)=>{
+			console.log("Clicked create outline")
+			await this.createOutline(outlinePromptInput.value)
+		})
+
     const fleshOutButton = container.createEl("button", {text: "Flesh Out"})
     fleshOutButton.addEventListener("click", async (evt)=>{
       console.log("Clicked Flesh out")
@@ -471,49 +302,6 @@ class ChatView extends ItemView{
 			console.log("Clicked Create Quiz");
 			await this. createQuiz()
 		})
-
-    // const transcribeButton = container.createEl("button", {text: "Transcribe"})
-    // transcribeButton.addEventListener("click", async (evt)=>{
-		// 	const file = this.app.workspace.getActiveFile()
-		// 	if(file){
-		// 		// @ts-ignore
-		// 		await this.transcribeAudio(`${this.app.vault.adapter.basePath}/${file.path}`)
-		// 	}
-    // })
-
-		// const urlInput = container.createEl("input", {})
-		// const transcribeButton = container.createEl("button", {text: "Transcribe YT video"})
-		// transcribeButton.addEventListener("click", async(evt)=>{
-		// 	console.log("clicked transcribe, url=", urlInput.value);
-		// 	this.transcribeVideo(urlInput.value)
-		// })
-    // const button2 = container.createEl("button", {text: "Re-organize"})
-    // button2.addEventListener("click", (evt)=>{
-    //   console.log("Clicked Reorganize")
-    // })
-    // const button3 = container.createEl("button", {text: "Create Quiz"})
-    // button3.addEventListener("click", (evt)=>{
-    //   console.log("Clicked Create Quiz")
-    // })
-    // const button4 = container.createEl("button", {text: "Create Exercise"})
-    // button4.addEventListener("click", (evt)=>{
-    //   console.log("Clicked Create Exercise")
-    // })
-
-
-    // const form = container.createEl("form", {})
-    // const userInput = form.createEl("input", {})
-    // userInput.setAttribute("placeholder", "Hello")
-    // const submitButton = form.createEl("input", {type: "submit"})
-    // // submitButton.onClickEvent((evt)=>
-    // //   evt.preventDefault()
-    // //   console.log("YOU CLICKED IT!")
-    // // )
-    // form.addEventListener("submit", (evt) => {
-    //   evt.preventDefault()
-    //   console.log("You submit the form, and the input said", userInput.value)
-    //   userInput.value = ""
-    // })
   }
 }
 
