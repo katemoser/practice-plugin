@@ -15,7 +15,6 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 
 const VIEW_TYPE_CHAT = "chat-view"
 const API_ENDPOINT = "https://api.openai.com/v1/chat/completions"
-const BASE_API_ENDPOINT = "https://api.openai.com/v1"
 
 /**
  * Plugin Class
@@ -32,7 +31,6 @@ export default class MyPlugin extends Plugin {
 		// this is how you could store env variables and such:
 		// console.log("This is the secret:", this.settings.mySetting)
 
-		// TODO: figure out how to get an html element to appear
 		this.registerView(
 			VIEW_TYPE_CHAT,
 			(leaf) =>new ChatView(leaf, this)
@@ -47,12 +45,12 @@ export default class MyPlugin extends Plugin {
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
 
-		// TODO: figure out how to access the current file
-		const file = this.app.workspace.getActiveFile()
-		if(file){
-			console.log("the currently active file is", file?.name);
-			console.log("this is its content", await this.app.vault.read(file));
-		}
+		// experimenting with getting the active file
+		// const file = this.app.workspace.getActiveFile()
+		// if(file){
+		// 	console.log("the currently active file is", file?.name);
+		// 	console.log("this is its content", await this.app.vault.read(file));
+		// }
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
