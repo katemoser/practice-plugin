@@ -6,3 +6,14 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+.border {
+  border: 1px solid var(--background-modifier-border);
+  padding: 1em;
+  margin: 1em;
+}
+
+.example {
+  color: var(--text-muted);
+  font-style: italic;
+}

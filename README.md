@@ -1,3 +1,34 @@
+# Personalized Tutor Plugin
+
+This is an Obsidian Plugin that uses the OpenAI API to help you study.
+
+## Getting Started
+
+To use this plugin, you must have an account with OpenAI, and an API key. To get this, follow this instructions here: https://openai.com/api/
+
+Until I publish this plugin on Obsidian, you can follow these instructions to set it up on your machine:
+
+1. something something
+2. something or other
+
+## What does it do?
+
+Right now there are three things the tutor will do:
+
+1. Create a notes outline of a source material you specify
+2. Flesh out a pre-existing note
+3. Create a quiz based on your note
+
+Let's take a look!
+
+...
+
+## Next features I would like to implement:
+- Anki integration
+- Custom instructions
+- Audio/video transcription
+
+# OLD README from obsidian:
 # Obsidian Sample Plugin
 
 This is a sample plugin for Obsidian (https://obsidian.md).
@@ -95,9 +126,3 @@ If you have multiple URLs, you can also do:
 
 See https://github.com/obsidianmd/obsidian-api
 
-
-# SOME OTHER IDEAS
-- Anki integration
-- Quiz creator
-- Add more info
-- Make new notes and link?

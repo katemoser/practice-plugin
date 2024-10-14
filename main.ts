@@ -281,25 +281,52 @@ class ChatView extends ItemView{
     container.empty()
     container.createEl("h2", {text: "What would you like to do?"})
 
+		// New Note options
+		const newNoteOptions = container.createEl("div", {cls: "border"})
 
-		const outlinePromptInput = container.createEl("input", {title:"Section"})
-		const createOutlineButton = container.createEl("button", {text: "Create Outline"});
+		newNoteOptions.createEl("p", {text: "Create an outline for:"})
+		const outlinePromptInput = newNoteOptions.createEl("input", {title:"Section"})
+		const createOutlineButton = newNoteOptions.createEl("button", {text: "Create Outline"});
+		newNoteOptions.createEl("br");
+		newNoteOptions.createEl(
+			"small", {
+				text:"ex) chapter 3 of hands on machine learning by geron aurelion",
+				cls:"example"
+			})
+
 		createOutlineButton.addEventListener("click", async (evt)=>{
 			console.log("Clicked create outline")
 			await this.createOutline(outlinePromptInput.value)
 		})
 
-    const fleshOutButton = container.createEl("button", {text: "Flesh Out"})
+		// Revise Note Options
+		const reviseNoteOptions = container.createEl("div", {cls: "border"})
+
+    const fleshOutButton = reviseNoteOptions.createEl("button", {text: "Flesh Out"})
     fleshOutButton.addEventListener("click", async (evt)=>{
       console.log("Clicked Flesh out")
       await this.fleshOutNote()
     })
+		reviseNoteOptions.createEl("br");
+		reviseNoteOptions.createEl(
+			"small", {
+				text:"create fleshed out copy of currently active note",
+				cls:"example"
+			})
 
-		const createQuizButton = container.createEl("button", {text: "Make Quiz"});
+		reviseNoteOptions.createEl("br");
+
+		const createQuizButton = reviseNoteOptions.createEl("button", {text: "Make Quiz"});
 		createQuizButton.addEventListener("click", async (evt)=>{
 			console.log("Clicked Create Quiz");
 			await this. createQuiz()
 		})
+		reviseNoteOptions.createEl("br");
+		reviseNoteOptions.createEl(
+			"small", {
+				text:"create quiz based on currently active note",
+				cls:"example"
+			})
   }
 }
 
