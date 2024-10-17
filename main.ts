@@ -7,10 +7,12 @@ import FormData from 'form-data';
 
 interface MyPluginSettings {
 	apiKey: string;
+	folder: string;
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
-	apiKey: ''
+	apiKey: '',
+	folder:''
 }
 
 const VIEW_TYPE_CHAT = "chat-view"
@@ -133,7 +135,7 @@ class ChatView extends ItemView{
 
 		const file = this.app.workspace.getActiveFile()
 		console.log("FILE:", file)
-		const path = file ? file.parent?.path : ""
+		// const path = file ? file.parent?.path : ""
 
 			const systemPrompt = `Make me a notes outline of ${outlinePrompt}.
 			This outline should start with 3-6 questions to keep in mind while reading.
@@ -144,9 +146,11 @@ class ChatView extends ItemView{
 
 			const newNoteContent = await this.talkToApi(messages);
 
+			const path = (file ? file.parent?.path || "" : "") + `/Outline for ${outlinePrompt}.md`
+			console.log("path for note:", )
 			// Create new note
 			const newNote = await this.app.vault.create(
-				path + `/Outline for ${outlinePrompt}`,
+				path,
 				newNoteContent
 			)
 
@@ -167,8 +171,10 @@ class ChatView extends ItemView{
 		const systemPrompt = `Your job is to make quiz out of this student's note.
 			you are going to take this student's note,
 			delimited by three asterisks (*** note ***), and create a quiz out of its content.
-			There should be a question for each importnat term in this note.
-			There should be at least 5 -10 conceptual questions.
+			This can be a long quiz, and include, at minimum:
+			- one question for each important term in this note.
+			- at least 5 -10 additional conceptual questions.
+			- questions about important library API  methods or syntax, if it is a note about programming.
 			Return only the quiz in a markdown table with two columns: question and answer.
 			***
 			${fileContent}
@@ -356,5 +362,17 @@ class SampleSettingTab extends PluginSettingTab {
 					this.plugin.settings.apiKey = value;
 					await this.plugin.saveSettings();
 				}));
+
+		new Setting(containerEl)
+				.setName("Target folder for generated notes")
+				.setDesc("like /ai-notes")
+				.addText(text => text
+					.setPlaceholder('Enter the folder name')
+					.setValue(this.plugin.settings.apiKey)
+					.onChange(async (value) => {
+						this.plugin.settings.folder = value;
+						await this.plugin.saveSettings();
+					}));
+
 	}
 }
